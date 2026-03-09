@@ -14,6 +14,7 @@ export default function BillDetail() {
   const [editing, setEditing] = useState(false);
   const [editNote, setEditNote] = useState('');
   const [editAmount, setEditAmount] = useState('');
+  const [editDate, setEditDate] = useState('');
 
   const loadBill = useCallback(async () => {
     const bills = await getAllBills();
@@ -22,6 +23,7 @@ export default function BillDetail() {
       setBill(found);
       setEditNote(found.note);
       setEditAmount(found.amount.toString());
+      setEditDate(dayjs(found.date).format('YYYY-MM-DDTHH:mm'));
     }
   }, [id]);
 
@@ -57,7 +59,7 @@ export default function BillDetail() {
   const handleSaveEdit = async () => {
     const amt = parseFloat(editAmount);
     if (!isNaN(amt) && amt > 0) {
-      const updated = { ...bill, amount: amt, note: editNote };
+      const updated = { ...bill, amount: amt, note: editNote, date: new Date(editDate).toISOString() };
       await updateBill(updated);
       window.dispatchEvent(new Event('billUpdated'));
       setBill(updated);
@@ -114,7 +116,16 @@ export default function BillDetail() {
           </div>
           <div className="detail-info-row">
             <span className="detail-label">时间</span>
-            <span>{dayjs(bill.date).format('YYYY-MM-DD HH:mm')}</span>
+            {editing ? (
+              <input
+                type="datetime-local"
+                className="detail-edit-date"
+                value={editDate}
+                onChange={e => setEditDate(e.target.value)}
+              />
+            ) : (
+              <span>{dayjs(bill.date).format('YYYY-MM-DD HH:mm')}</span>
+            )}
           </div>
           <div className="detail-info-row">
             <span className="detail-label">备注</span>

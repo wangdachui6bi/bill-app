@@ -107,3 +107,11 @@
   padding: 4px 0;
   max-width: 200px;
 }
+
+.detail-edit-date {
+  font-size: 14px;
+  color: var(--text);
+  border-bottom: 1px solid var(--primary);
+  padding: 4px 0;
+  background: transparent;
+}
