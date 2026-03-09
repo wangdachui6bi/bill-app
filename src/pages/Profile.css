@@ -1,0 +1,144 @@
+.profile-header {
+  text-align: center;
+  padding: 32px 16px 20px;
+}
+
+.profile-avatar {
+  font-size: 56px;
+  margin-bottom: 8px;
+}
+
+.profile-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.profile-sub {
+  font-size: 13px;
+  color: var(--text-light);
+}
+
+.profile-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 20px 16px;
+}
+
+.profile-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.profile-stat-value {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.profile-stat-label {
+  font-size: 12px;
+  color: var(--text-light);
+}
+
+.profile-stat-divider {
+  width: 1px;
+  height: 32px;
+  background: var(--border);
+}
+
+.profile-menu {
+  padding: 0;
+  overflow: hidden;
+}
+
+.profile-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 15px;
+}
+
+.profile-menu-item:last-child {
+  border-bottom: none;
+}
+
+.profile-menu-item:active {
+  background: var(--bg);
+}
+
+.menu-arrow {
+  margin-left: auto;
+  color: var(--text-light);
+  font-size: 18px;
+}
+
+.menu-value {
+  margin-left: auto;
+  color: var(--text-light);
+  font-size: 13px;
+}
+
+/* Confirm Dialog */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  animation: fadeIn 0.2s ease;
+}
+
+.confirm-dialog {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 24px;
+  width: 80%;
+  max-width: 320px;
+  animation: scaleIn 0.2s ease;
+}
+
+.confirm-title {
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.confirm-msg {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.confirm-cancel {
+  flex: 1;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.confirm-danger {
+  flex: 1;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  background: var(--danger);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}

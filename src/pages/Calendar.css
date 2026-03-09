@@ -1,0 +1,145 @@
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 16px;
+}
+
+.calendar-nav button {
+  color: var(--text-secondary);
+  padding: 4px;
+}
+
+.calendar-month-label {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.calendar-summary {
+  display: flex;
+  justify-content: space-around;
+  padding: 0 16px 12px;
+}
+
+.calendar-summary-item {
+  text-align: center;
+}
+
+.calendar-summary-item .label {
+  font-size: 12px;
+  color: var(--text-light);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.calendar-summary-item .value {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.calendar-summary-item .value.expense {
+  color: var(--danger);
+}
+
+.calendar-summary-item .value.income {
+  color: var(--success);
+}
+
+.calendar-card {
+  padding: 12px;
+}
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 4px;
+}
+
+.weekday {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-light);
+  padding: 4px 0;
+}
+
+.calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.calendar-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 2px;
+  min-height: 48px;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.calendar-day.empty {
+  pointer-events: none;
+}
+
+.day-num {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.day-amount {
+  font-size: 9px;
+  color: var(--danger);
+  margin-top: 2px;
+}
+
+.day-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--success);
+  margin-top: 2px;
+}
+
+.calendar-day.today .day-num {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.calendar-day.selected {
+  background: var(--primary);
+}
+
+.calendar-day.selected .day-num {
+  color: #fff;
+  font-weight: 700;
+}
+
+.calendar-day.selected .day-amount {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.calendar-day.selected .day-dot {
+  background: #fff;
+}
+
+.calendar-bills {
+  margin-bottom: 20px;
+}
+
+.calendar-bills-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.calendar-bills-count {
+  font-size: 12px;
+  color: var(--text-light);
+  font-weight: normal;
+}

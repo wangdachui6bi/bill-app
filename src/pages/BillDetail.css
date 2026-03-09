@@ -1,0 +1,109 @@
+.detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+}
+
+.detail-header span {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.detail-header button {
+  color: var(--text);
+  padding: 4px;
+}
+
+.detail-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.detail-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 16px;
+}
+
+.detail-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  margin-bottom: 12px;
+}
+
+.detail-category {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.detail-amount {
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.detail-edit-amount {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.detail-edit-amount input {
+  font-size: 28px;
+  font-weight: 700;
+  width: 150px;
+  text-align: center;
+  border-bottom: 2px solid var(--primary);
+  padding-bottom: 4px;
+}
+
+.detail-info {
+  margin-top: 0;
+}
+
+.detail-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+
+.detail-info-row:last-child {
+  border-bottom: none;
+}
+
+.detail-label {
+  color: var(--text-secondary);
+}
+
+.detail-note {
+  color: var(--text);
+  max-width: 200px;
+  text-align: right;
+}
+
+.detail-meta {
+  color: var(--text-light);
+  font-size: 12px;
+}
+
+.detail-edit-note {
+  text-align: right;
+  font-size: 14px;
+  border-bottom: 1px solid var(--primary);
+  padding: 4px 0;
+  max-width: 200px;
+}

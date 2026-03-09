@@ -1,0 +1,268 @@
+.home-header {
+  position: relative;
+  padding: 24px 20px 32px;
+  overflow: hidden;
+}
+
+.home-header-bg {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #F5A623, #FFB74D);
+  border-radius: 0 0 24px 24px;
+}
+
+.home-header-content {
+  position: relative;
+  color: #fff;
+}
+
+.home-month-label {
+  font-size: 14px;
+  opacity: 0.9;
+  margin-bottom: 8px;
+}
+
+.home-total-expense {
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  letter-spacing: -0.5px;
+}
+
+.home-summary-row {
+  display: flex;
+  gap: 24px;
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+/* Budget */
+.home-budget-card {
+  margin-top: -16px;
+  position: relative;
+  z-index: 1;
+}
+
+.budget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.budget-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.budget-edit {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.budget-input-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  align-items: center;
+}
+
+.budget-input-row input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  background: var(--bg);
+}
+
+.budget-save-btn {
+  padding: 8px 16px;
+  background: var(--primary);
+  color: #fff;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+
+.budget-cancel-btn {
+  padding: 8px 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.budget-progress {
+  margin-bottom: 16px;
+}
+
+.budget-progress-bar {
+  height: 8px;
+  background: var(--bg);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.budget-progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.budget-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.budget-remaining {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.budget-daily {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.budget-daily-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.budget-daily-amount {
+  margin-left: auto;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.dot.orange { background: var(--primary); }
+.dot.blue { background: #4ECDC4; }
+
+/* Recent bills */
+.home-recent-card {
+  margin-bottom: 20px;
+}
+
+.recent-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.recent-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.recent-more {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.recent-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.bill-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.bill-item:last-child {
+  border-bottom: none;
+}
+
+.bill-item:active {
+  background: var(--bg);
+  margin: 0 -16px;
+  padding: 12px 16px;
+}
+
+.bill-item-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.bill-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.bill-item-category {
+  font-size: 15px;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.bill-item-meta {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-light);
+}
+
+.bill-item-note {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bill-item-amount {
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 40px 0;
+  color: var(--text-light);
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.empty-state p {
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.empty-sub {
+  font-size: 12px !important;
+}
