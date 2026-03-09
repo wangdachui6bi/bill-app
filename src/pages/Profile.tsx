@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { Trash2, Download, Upload, FileText, Info } from "lucide-react";
 import dayjs from "dayjs";
+import { Capacitor } from "@capacitor/core";
+import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
+import { Share } from "@capacitor/share";
 import type { Bill } from "../types";
 import { getAllBills } from "../stores/billStore";
 import localforage from "localforage";
@@ -37,19 +40,41 @@ export default function Profile() {
   const handleExport = async () => {
     const allBills = await getAllBills();
     const data = JSON.stringify(allBills, null, 2);
-    const blob = new Blob([data], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `bills-${dayjs().format("YYYYMMDD")}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const fileName = `bills-${dayjs().format("YYYYMMDD")}.json`;
+
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const result = await Filesystem.writeFile({
+          path: fileName,
+          data,
+          directory: Directory.Cache,
+          encoding: Encoding.UTF8,
+        });
+        await Share.share({
+          title: "导出账单数据",
+          text: `共 ${allBills.length} 条账单`,
+          url: result.uri,
+          dialogTitle: "保存账单数据",
+        });
+      } catch (err) {
+        if ((err as Error).message?.includes("canceled")) return;
+        alert("导出失败: " + (err as Error).message);
+      }
+    } else {
+      const blob = new Blob([data], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
   };
 
   const handleImport = () => {
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = ".json";
+    input.accept = ".json,application/json,text/*";
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
