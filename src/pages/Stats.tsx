@@ -1,23 +1,40 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import dayjs from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
 import * as echarts from 'echarts/core';
-import { PieChart as PieChartComponent } from 'echarts/charts';
-import { TooltipComponent, LegendComponent } from 'echarts/components';
+import { PieChart as PieChartComponent, BarChart as BarChartComponent } from 'echarts/charts';
+import { TooltipComponent, LegendComponent, GridComponent } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
 import type { Bill, BillType } from '../types';
 import { getAllBills } from '../stores/billStore';
 import { getCategoryDisplay, getCategoryById, DEFAULT_CATEGORIES } from '../utils/categories';
 import './Stats.css';
 
-echarts.use([PieChartComponent, TooltipComponent, LegendComponent, CanvasRenderer]);
+dayjs.extend(isoWeek);
+echarts.use([PieChartComponent, BarChartComponent, TooltipComponent, LegendComponent, GridComponent, CanvasRenderer]);
+
+type TimeRange = 'week' | 'month' | 'year' | 'custom';
+
+function getWeekLabel(d: dayjs.Dayjs) {
+  const start = d.startOf('isoWeek');
+  const end = d.endOf('isoWeek');
+  return `${start.format('M.D')} - ${end.format('M.D')}`;
+}
 
 export default function Stats() {
   const [bills, setBills] = useState<Bill[]>([]);
-  const [currentMonth, setCurrentMonth] = useState(dayjs());
   const [billType, setBillType] = useState<BillType>('expense');
+  const [timeRange, setTimeRange] = useState<TimeRange>('month');
+  const [anchor, setAnchor] = useState(dayjs());
+  const [customStart, setCustomStart] = useState(dayjs().startOf('month').format('YYYY-MM-DD'));
+  const [customEnd, setCustomEnd] = useState(dayjs().format('YYYY-MM-DD'));
+  const [showCustomPicker, setShowCustomPicker] = useState(false);
+
   const pieRef = useRef<HTMLDivElement>(null);
-  const chartInstance = useRef<echarts.ECharts | null>(null);
+  const barRef = useRef<HTMLDivElement>(null);
+  const pieChart = useRef<echarts.ECharts | null>(null);
+  const barChart = useRef<echarts.ECharts | null>(null);
 
   const loadData = useCallback(async () => {
     const allBills = await getAllBills();
@@ -31,16 +48,61 @@ export default function Stats() {
     return () => window.removeEventListener('billUpdated', handler);
   }, [loadData]);
 
-  const monthBills = bills.filter(b => {
+  // Compute date range based on mode
+  let rangeStart: dayjs.Dayjs;
+  let rangeEnd: dayjs.Dayjs;
+  let rangeLabel: string;
+
+  switch (timeRange) {
+    case 'week':
+      rangeStart = anchor.startOf('isoWeek');
+      rangeEnd = anchor.endOf('isoWeek');
+      rangeLabel = `${anchor.isoWeekYear()}年 第${anchor.isoWeek()}周`;
+      break;
+    case 'month':
+      rangeStart = anchor.startOf('month');
+      rangeEnd = anchor.endOf('month');
+      rangeLabel = anchor.format('YYYY年M月');
+      break;
+    case 'year':
+      rangeStart = anchor.startOf('year');
+      rangeEnd = anchor.endOf('year');
+      rangeLabel = anchor.format('YYYY年');
+      break;
+    case 'custom':
+      rangeStart = dayjs(customStart).startOf('day');
+      rangeEnd = dayjs(customEnd).endOf('day');
+      rangeLabel = `${rangeStart.format('M.D')} - ${rangeEnd.format('M.D')}`;
+      break;
+  }
+
+  const navigate = (dir: -1 | 1) => {
+    if (timeRange === 'custom') return;
+    const unit = timeRange === 'week' ? 'week' : timeRange === 'month' ? 'month' : 'year';
+    setAnchor(prev => dir === -1 ? prev.subtract(1, unit) : prev.add(1, unit));
+  };
+
+  // Filter bills
+  const filteredBills = bills.filter(b => {
     const d = dayjs(b.date);
-    return d.year() === currentMonth.year() && d.month() === currentMonth.month() && b.type === billType;
+    return d.isAfter(rangeStart.subtract(1, 'millisecond')) && d.isBefore(rangeEnd.add(1, 'millisecond')) && b.type === billType;
   });
 
-  const total = monthBills.reduce((s, b) => s + b.amount, 0);
+  const allFilteredBills = bills.filter(b => {
+    const d = dayjs(b.date);
+    return d.isAfter(rangeStart.subtract(1, 'millisecond')) && d.isBefore(rangeEnd.add(1, 'millisecond'));
+  });
 
-  // Group by parent category
+  const totalExpense = allFilteredBills.filter(b => b.type === 'expense').reduce((s, b) => s + b.amount, 0);
+  const totalIncome = allFilteredBills.filter(b => b.type === 'income').reduce((s, b) => s + b.amount, 0);
+  const total = filteredBills.reduce((s, b) => s + b.amount, 0);
+  const billCount = filteredBills.length;
+  const daysDiff = rangeEnd.diff(rangeStart, 'day') + 1;
+  const dailyAvg = daysDiff > 0 ? total / daysDiff : 0;
+
+  // Category breakdown
   const categoryMap = new Map<string, number>();
-  monthBills.forEach(b => {
+  filteredBills.forEach(b => {
     const cat = getCategoryById(b.categoryId);
     const parentId = cat?.parentId || b.categoryId;
     categoryMap.set(parentId, (categoryMap.get(parentId) || 0) + b.amount);
@@ -53,55 +115,127 @@ export default function Stats() {
       return { categoryId, amount, ...cat };
     });
 
+  // Bar chart data: daily for week, daily for month, monthly for year
+  const barData = useCallback(() => {
+    const labels: string[] = [];
+    const values: number[] = [];
+
+    if (timeRange === 'week' || timeRange === 'custom') {
+      let d = rangeStart;
+      while (d.isBefore(rangeEnd) || d.isSame(rangeEnd, 'day')) {
+        const dayStr = d.format('YYYY-MM-DD');
+        labels.push(d.format('M/D'));
+        const dayTotal = filteredBills
+          .filter(b => dayjs(b.date).format('YYYY-MM-DD') === dayStr)
+          .reduce((s, b) => s + b.amount, 0);
+        values.push(Number(dayTotal.toFixed(2)));
+        d = d.add(1, 'day');
+      }
+    } else if (timeRange === 'month') {
+      const daysInMonth = anchor.daysInMonth();
+      for (let i = 1; i <= daysInMonth; i++) {
+        const dayStr = anchor.date(i).format('YYYY-MM-DD');
+        labels.push(`${i}`);
+        const dayTotal = filteredBills
+          .filter(b => dayjs(b.date).format('YYYY-MM-DD') === dayStr)
+          .reduce((s, b) => s + b.amount, 0);
+        values.push(Number(dayTotal.toFixed(2)));
+      }
+    } else if (timeRange === 'year') {
+      for (let m = 0; m < 12; m++) {
+        labels.push(`${m + 1}月`);
+        const monthTotal = filteredBills
+          .filter(b => dayjs(b.date).month() === m)
+          .reduce((s, b) => s + b.amount, 0);
+        values.push(Number(monthTotal.toFixed(2)));
+      }
+    }
+
+    return { labels, values };
+  }, [timeRange, anchor, rangeStart, rangeEnd, filteredBills]);
+
+  // Pie chart
   useEffect(() => {
     if (!pieRef.current) return;
-
-    if (!chartInstance.current) {
-      chartInstance.current = echarts.init(pieRef.current);
+    if (!pieChart.current) {
+      pieChart.current = echarts.init(pieRef.current);
     }
-
     if (sortedCategories.length === 0) {
-      chartInstance.current.clear();
+      pieChart.current.clear();
       return;
     }
-
-    const option = {
-      tooltip: {
-        trigger: 'item' as const,
-        formatter: '{b}: ¥{c} ({d}%)',
-      },
+    pieChart.current.setOption({
+      tooltip: { trigger: 'item', formatter: '{b}: ¥{c} ({d}%)' },
       series: [{
-        type: 'pie' as const,
+        type: 'pie',
         radius: ['40%', '70%'],
         center: ['50%', '50%'],
         avoidLabelOverlap: true,
-        itemStyle: {
-          borderRadius: 6,
-          borderColor: '#fff',
-          borderWidth: 2,
-        },
-        label: {
-          show: true,
-          formatter: '{b}\n{d}%',
-          fontSize: 11,
-        },
+        itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+        label: { show: true, formatter: '{b}\n{d}%', fontSize: 11 },
         data: sortedCategories.map(c => {
           const parentCat = DEFAULT_CATEGORIES.find(cat => cat.id === c.categoryId);
-          return {
-            value: Number(c.amount.toFixed(2)),
-            name: c.name,
-            itemStyle: { color: parentCat?.color || c.color },
-          };
+          return { value: Number(c.amount.toFixed(2)), name: c.name, itemStyle: { color: parentCat?.color || c.color } };
         }),
       }],
-    };
-
-    chartInstance.current.setOption(option, true);
-
-    const resizeHandler = () => chartInstance.current?.resize();
-    window.addEventListener('resize', resizeHandler);
-    return () => window.removeEventListener('resize', resizeHandler);
+    }, true);
+    const h = () => pieChart.current?.resize();
+    window.addEventListener('resize', h);
+    return () => window.removeEventListener('resize', h);
   }, [sortedCategories]);
+
+  // Bar chart
+  useEffect(() => {
+    if (!barRef.current) return;
+    if (!barChart.current) {
+      barChart.current = echarts.init(barRef.current);
+    }
+    const { labels, values } = barData();
+    if (values.every(v => v === 0)) {
+      barChart.current.clear();
+      return;
+    }
+    barChart.current.setOption({
+      tooltip: {
+        trigger: 'axis',
+        formatter: (params: unknown) => {
+          const p = (params as { name: string; value: number }[])[0];
+          return `${p.name}<br/>¥${p.value.toFixed(2)}`;
+        },
+      },
+      grid: { left: 50, right: 16, top: 16, bottom: 28 },
+      xAxis: {
+        type: 'category',
+        data: labels,
+        axisLabel: {
+          fontSize: 10,
+          interval: timeRange === 'month' ? Math.floor(labels.length / 8) : 0,
+          rotate: timeRange === 'custom' && labels.length > 14 ? 45 : 0,
+        },
+        axisTick: { show: false },
+        axisLine: { lineStyle: { color: '#E0E0E0' } },
+      },
+      yAxis: {
+        type: 'value',
+        axisLabel: { fontSize: 10, formatter: (v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}` },
+        splitLine: { lineStyle: { color: '#F0F0F0' } },
+      },
+      series: [{
+        type: 'bar',
+        data: values,
+        barMaxWidth: 20,
+        itemStyle: {
+          borderRadius: [4, 4, 0, 0],
+          color: billType === 'expense'
+            ? new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#FF6B6B' }, { offset: 1, color: '#FF9F43' }])
+            : new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#2ED573' }, { offset: 1, color: '#7BED9F' }]),
+        },
+      }],
+    }, true);
+    const h = () => barChart.current?.resize();
+    window.addEventListener('resize', h);
+    return () => window.removeEventListener('resize', h);
+  }, [barData, billType, timeRange]);
 
   return (
     <div className="page">
@@ -110,45 +244,100 @@ export default function Stats() {
           <span className="stats-title">统计</span>
         </div>
 
-        {/* Month Navigation */}
-        <div className="calendar-nav">
-          <button onClick={() => setCurrentMonth(prev => prev.subtract(1, 'month'))}>
-            <ChevronLeft size={20} />
-          </button>
-          <span className="calendar-month-label">
-            {currentMonth.format('YYYY年M月')}
-          </span>
-          <button onClick={() => setCurrentMonth(prev => prev.add(1, 'month'))}>
-            <ChevronRight size={20} />
-          </button>
+        {/* Time Range Tabs */}
+        <div className="stats-range-tabs">
+          {([['week', '周'], ['month', '月'], ['year', '年'], ['custom', '自定义']] as [TimeRange, string][]).map(([key, label]) => (
+            <button
+              key={key}
+              className={`range-tab ${timeRange === key ? 'active' : ''}`}
+              onClick={() => {
+                setTimeRange(key);
+                if (key === 'custom') setShowCustomPicker(true);
+                else setShowCustomPicker(false);
+              }}
+            >
+              {label}
+            </button>
+          ))}
         </div>
+
+        {/* Navigation */}
+        {timeRange !== 'custom' ? (
+          <div className="calendar-nav">
+            <button onClick={() => navigate(-1)}><ChevronLeft size={20} /></button>
+            <span className="calendar-month-label">
+              {rangeLabel}
+              {timeRange === 'week' && <span className="week-detail"> ({getWeekLabel(anchor)})</span>}
+            </span>
+            <button onClick={() => navigate(1)}><ChevronRight size={20} /></button>
+          </div>
+        ) : (
+          <div className="custom-range-picker">
+            <div className="custom-range-row">
+              <div className="custom-date-field">
+                <Calendar size={14} />
+                <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} />
+              </div>
+              <span className="custom-range-sep">至</span>
+              <div className="custom-date-field">
+                <Calendar size={14} />
+                <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} />
+              </div>
+            </div>
+            {showCustomPicker && <div className="custom-range-label">{rangeLabel}，共{daysDiff}天</div>}
+          </div>
+        )}
 
         {/* Type Toggle */}
         <div className="stats-type-toggle">
-          <button
-            className={`type-tab ${billType === 'expense' ? 'active' : ''}`}
-            onClick={() => setBillType('expense')}
-          >
-            支出
-          </button>
-          <button
-            className={`type-tab ${billType === 'income' ? 'active' : ''}`}
-            onClick={() => setBillType('income')}
-          >
-            收入
-          </button>
+          <button className={`type-tab ${billType === 'expense' ? 'active' : ''}`} onClick={() => setBillType('expense')}>支出</button>
+          <button className={`type-tab ${billType === 'income' ? 'active' : ''}`} onClick={() => setBillType('income')}>收入</button>
         </div>
 
-        {/* Total */}
-        <div className="stats-total">
-          <span>{billType === 'expense' ? '总支出' : '总收入'}</span>
-          <span className={`stats-total-amount ${billType === 'expense' ? 'amount-expense' : 'amount-income'}`}>
-            ¥{total.toFixed(2)}
-          </span>
+        {/* Summary Cards */}
+        <div className="stats-summary-cards">
+          <div className="summary-card">
+            <div className="summary-label">总支出</div>
+            <div className="summary-value amount-expense">¥{totalExpense.toFixed(2)}</div>
+          </div>
+          <div className="summary-card">
+            <div className="summary-label">总收入</div>
+            <div className="summary-value amount-income">¥{totalIncome.toFixed(2)}</div>
+          </div>
+          <div className="summary-card">
+            <div className="summary-label">结余</div>
+            <div className={`summary-value ${totalIncome - totalExpense >= 0 ? 'amount-income' : 'amount-expense'}`}>
+              ¥{(totalIncome - totalExpense).toFixed(2)}
+            </div>
+          </div>
+        </div>
+
+        <div className="stats-detail-row">
+          <div className="stats-detail-item">
+            <span className="detail-label">笔数</span>
+            <span className="detail-value">{billCount}笔</span>
+          </div>
+          <div className="stats-detail-item">
+            <span className="detail-label">日均{billType === 'expense' ? '支出' : '收入'}</span>
+            <span className="detail-value">¥{dailyAvg.toFixed(2)}</span>
+          </div>
+          <div className="stats-detail-item">
+            <span className="detail-label">笔均</span>
+            <span className="detail-value">¥{billCount > 0 ? (total / billCount).toFixed(2) : '0.00'}</span>
+          </div>
+        </div>
+
+        {/* Bar Chart - Trend */}
+        <div className="card">
+          <div className="stats-section-title">
+            {timeRange === 'week' ? '每日趋势' : timeRange === 'month' ? '每日趋势' : timeRange === 'year' ? '月度趋势' : '每日趋势'}
+          </div>
+          <div ref={barRef} className="stats-bar" />
         </div>
 
         {/* Pie Chart */}
         <div className="card">
+          <div className="stats-section-title">分类占比</div>
           {sortedCategories.length > 0 ? (
             <div ref={pieRef} className="stats-pie" />
           ) : (
@@ -162,20 +351,20 @@ export default function Stats() {
         {/* Category List */}
         <div className="card stats-category-list">
           <div className="stats-category-header">分类明细</div>
+          {sortedCategories.length === 0 && (
+            <div className="empty-state" style={{ padding: '20px 0' }}>
+              <p style={{ fontSize: 13, color: 'var(--text-light)' }}>暂无数据</p>
+            </div>
+          )}
           {sortedCategories.map(c => {
             const percent = total > 0 ? (c.amount / total) * 100 : 0;
             return (
               <div key={c.categoryId} className="stats-category-item">
-                <div className="stats-cat-icon" style={{ background: `${c.color}20` }}>
-                  {c.icon}
-                </div>
+                <div className="stats-cat-icon" style={{ background: `${c.color}20` }}>{c.icon}</div>
                 <div className="stats-cat-info">
                   <div className="stats-cat-name">{c.name}</div>
                   <div className="stats-cat-bar">
-                    <div
-                      className="stats-cat-bar-fill"
-                      style={{ width: `${percent}%`, background: c.color }}
-                    />
+                    <div className="stats-cat-bar-fill" style={{ width: `${percent}%`, background: c.color }} />
                   </div>
                 </div>
                 <div className="stats-cat-right">
