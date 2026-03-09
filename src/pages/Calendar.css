@@ -143,3 +143,130 @@
   color: var(--text-light);
   font-weight: normal;
 }
+
+/* Clickable Month Label */
+.calendar-month-label.clickable {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.calendar-month-label.clickable:active {
+  background: var(--bg);
+}
+
+.picker-arrow {
+  font-size: 10px;
+  color: var(--text-light);
+}
+
+/* Year-Month Picker Overlay */
+.ym-picker-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 200;
+  animation: fadeIn 0.2s ease;
+}
+
+.ym-picker {
+  background: var(--card);
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-width: 480px;
+  padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
+  animation: slideUp 0.25s ease;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.ym-picker-year-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 16px;
+}
+
+.ym-picker-year-nav button {
+  color: var(--text-secondary);
+  padding: 4px;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+
+.ym-picker-year-nav button:active {
+  background: var(--bg);
+}
+
+.ym-picker-year-nav button:disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.ym-picker-year {
+  font-size: 18px;
+  font-weight: 700;
+  min-width: 80px;
+  text-align: center;
+}
+
+.ym-picker-months {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.ym-month-btn {
+  padding: 12px 0;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--bg);
+  transition: all 0.2s;
+}
+
+.ym-month-btn:active {
+  transform: scale(0.95);
+}
+
+.ym-month-btn.active {
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(245, 166, 35, 0.3);
+}
+
+.ym-month-btn:disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.ym-picker-today {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary);
+  background: rgba(245, 166, 35, 0.1);
+  text-align: center;
+  transition: background 0.2s;
+}
+
+.ym-picker-today:active {
+  background: rgba(245, 166, 35, 0.2);
+}

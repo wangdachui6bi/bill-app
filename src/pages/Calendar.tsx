@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import dayjs from "dayjs";
@@ -8,6 +8,8 @@ import { getCategoryDisplay } from "../utils/categories";
 import { formatAmount } from "../utils/formatters";
 import "./Calendar.css";
 
+const MONTHS = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
+
 export default function Calendar() {
   const navigate = useNavigate();
   const [bills, setBills] = useState<Bill[]>([]);
@@ -15,6 +17,8 @@ export default function Calendar() {
   const [selectedDate, setSelectedDate] = useState(
     dayjs().format("YYYY-MM-DD"),
   );
+  const [showPicker, setShowPicker] = useState(false);
+  const [pickerYear, setPickerYear] = useState(dayjs().year());
 
   const loadData = useCallback(async () => {
     const allBills = await getAllBills();
@@ -27,6 +31,17 @@ export default function Calendar() {
     window.addEventListener("billUpdated", handler);
     return () => window.removeEventListener("billUpdated", handler);
   }, [loadData]);
+
+  const yearRange = useMemo(() => {
+    if (bills.length === 0) return { min: dayjs().year() - 5, max: dayjs().year() };
+    const years = bills.map(b => dayjs(b.date).year());
+    return { min: Math.min(...years), max: Math.max(...years, dayjs().year()) };
+  }, [bills]);
+
+  const handlePickMonth = (month: number) => {
+    setCurrentMonth(dayjs().year(pickerYear).month(month));
+    setShowPicker(false);
+  };
 
   const daysInMonth = currentMonth.daysInMonth();
   const firstDayOfWeek = currentMonth.startOf("month").day();
@@ -74,8 +89,12 @@ export default function Calendar() {
           >
             <ChevronLeft size={20} />
           </button>
-          <span className="calendar-month-label">
+          <span
+            className="calendar-month-label clickable"
+            onClick={() => { setPickerYear(currentMonth.year()); setShowPicker(true); }}
+          >
             {currentMonth.format("YYYY年M月")}
+            <span className="picker-arrow">▾</span>
           </span>
           <button
             onClick={() => setCurrentMonth((prev) => prev.add(1, "month"))}
@@ -83,6 +102,48 @@ export default function Calendar() {
             <ChevronRight size={20} />
           </button>
         </div>
+
+        {/* Year-Month Picker Overlay */}
+        {showPicker && (
+          <div className="ym-picker-overlay" onClick={() => setShowPicker(false)}>
+            <div className="ym-picker" onClick={e => e.stopPropagation()}>
+              <div className="ym-picker-year-nav">
+                <button
+                  disabled={pickerYear <= yearRange.min}
+                  onClick={() => setPickerYear(y => y - 1)}
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <span className="ym-picker-year">{pickerYear}年</span>
+                <button
+                  disabled={pickerYear >= yearRange.max}
+                  onClick={() => setPickerYear(y => y + 1)}
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </div>
+              <div className="ym-picker-months">
+                {MONTHS.map((label, i) => {
+                  const isActive = pickerYear === currentMonth.year() && i === currentMonth.month();
+                  const isFuture = pickerYear === dayjs().year() && i > dayjs().month();
+                  return (
+                    <button
+                      key={i}
+                      className={`ym-month-btn ${isActive ? "active" : ""}`}
+                      disabled={isFuture}
+                      onClick={() => handlePickMonth(i)}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              <button className="ym-picker-today" onClick={() => { setCurrentMonth(dayjs()); setShowPicker(false); }}>
+                回到今天
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Month Summary */}
         <div className="calendar-summary">

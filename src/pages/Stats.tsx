@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, ChevronDown, Calendar } from 'lucide-react';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import * as echarts from 'echarts/core';
@@ -9,6 +10,7 @@ import { CanvasRenderer } from 'echarts/renderers';
 import type { Bill, BillType } from '../types';
 import { getAllBills } from '../stores/billStore';
 import { getCategoryDisplay, getCategoryById, DEFAULT_CATEGORIES } from '../utils/categories';
+import { formatAmount } from '../utils/formatters';
 import './Stats.css';
 
 dayjs.extend(isoWeek);
@@ -23,6 +25,7 @@ function getWeekLabel(d: dayjs.Dayjs) {
 }
 
 export default function Stats() {
+  const routerNavigate = useNavigate();
   const [bills, setBills] = useState<Bill[]>([]);
   const [billType, setBillType] = useState<BillType>('expense');
   const [timeRange, setTimeRange] = useState<TimeRange>('month');
@@ -30,6 +33,7 @@ export default function Stats() {
   const [customStart, setCustomStart] = useState(dayjs().startOf('month').format('YYYY-MM-DD'));
   const [customEnd, setCustomEnd] = useState(dayjs().format('YYYY-MM-DD'));
   const [showCustomPicker, setShowCustomPicker] = useState(false);
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
   const pieRef = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
@@ -114,6 +118,30 @@ export default function Stats() {
       const cat = getCategoryDisplay(categoryId);
       return { categoryId, amount, ...cat };
     });
+
+  const getCategoryBills = (parentCatId: string) => {
+    return filteredBills
+      .filter(b => {
+        const cat = getCategoryById(b.categoryId);
+        const pid = cat?.parentId || b.categoryId;
+        return pid === parentCatId;
+      })
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  };
+
+  const getSubCategoryBreakdown = (parentCatId: string) => {
+    const subMap = new Map<string, number>();
+    const catBills = getCategoryBills(parentCatId);
+    catBills.forEach(b => {
+      subMap.set(b.categoryId, (subMap.get(b.categoryId) || 0) + b.amount);
+    });
+    return Array.from(subMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([catId, amount]) => {
+        const display = getCategoryDisplay(catId);
+        return { catId, amount, ...display };
+      });
+  };
 
   // Bar chart data: daily for week, daily for month, monthly for year
   const barData = useCallback(() => {
@@ -358,19 +386,68 @@ export default function Stats() {
           )}
           {sortedCategories.map(c => {
             const percent = total > 0 ? (c.amount / total) * 100 : 0;
+            const isExpanded = expandedCategory === c.categoryId;
+            const subBreakdown = isExpanded ? getSubCategoryBreakdown(c.categoryId) : [];
+            const catBills = isExpanded ? getCategoryBills(c.categoryId) : [];
+
             return (
-              <div key={c.categoryId} className="stats-category-item">
-                <div className="stats-cat-icon" style={{ background: `${c.color}20` }}>{c.icon}</div>
-                <div className="stats-cat-info">
-                  <div className="stats-cat-name">{c.name}</div>
-                  <div className="stats-cat-bar">
-                    <div className="stats-cat-bar-fill" style={{ width: `${percent}%`, background: c.color }} />
+              <div key={c.categoryId} className={`stats-category-group ${isExpanded ? 'expanded' : ''}`}>
+                <div
+                  className="stats-category-item"
+                  onClick={() => setExpandedCategory(isExpanded ? null : c.categoryId)}
+                >
+                  <div className="stats-cat-icon" style={{ background: `${c.color}20` }}>{c.icon}</div>
+                  <div className="stats-cat-info">
+                    <div className="stats-cat-name">{c.name}</div>
+                    <div className="stats-cat-bar">
+                      <div className="stats-cat-bar-fill" style={{ width: `${percent}%`, background: c.color }} />
+                    </div>
                   </div>
+                  <div className="stats-cat-right">
+                    <div className="stats-cat-amount">¥{c.amount.toFixed(2)}</div>
+                    <div className="stats-cat-percent">{percent.toFixed(1)}%</div>
+                  </div>
+                  <ChevronDown size={16} className={`stats-cat-arrow ${isExpanded ? 'rotated' : ''}`} />
                 </div>
-                <div className="stats-cat-right">
-                  <div className="stats-cat-amount">¥{c.amount.toFixed(2)}</div>
-                  <div className="stats-cat-percent">{percent.toFixed(1)}%</div>
-                </div>
+
+                {isExpanded && (
+                  <div className="stats-cat-detail">
+                    {subBreakdown.length > 1 && (
+                      <div className="stats-sub-categories">
+                        {subBreakdown.map(sub => (
+                          <div key={sub.catId} className="stats-sub-item">
+                            <span className="stats-sub-icon">{sub.icon}</span>
+                            <span className="stats-sub-name">{sub.name}</span>
+                            <span className="stats-sub-amount">¥{sub.amount.toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="stats-cat-bills">
+                      {catBills.map(bill => {
+                        const billCat = getCategoryDisplay(bill.categoryId);
+                        return (
+                          <div
+                            key={bill.id}
+                            className="stats-bill-item"
+                            onClick={(e) => { e.stopPropagation(); routerNavigate(`/bill/${bill.id}`); }}
+                          >
+                            <div className="stats-bill-left">
+                              <span className="stats-bill-sub-icon">{billCat.icon}</span>
+                              <div className="stats-bill-info">
+                                <div className="stats-bill-note">{bill.note || billCat.fullName}</div>
+                                <div className="stats-bill-date">{dayjs(bill.date).format('M月D日 HH:mm')}</div>
+                              </div>
+                            </div>
+                            <div className={`stats-bill-amount ${bill.type === 'expense' ? 'amount-expense' : 'amount-income'}`}>
+                              {formatAmount(bill.amount, bill.type)}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
