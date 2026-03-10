@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
-import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { HashRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
+import { App as CapApp } from '@capacitor/app';
 import TabBar from './components/TabBar';
 import Home from './pages/Home';
 import Calendar from './pages/Calendar';
@@ -14,8 +16,11 @@ import { processRecurringBills } from './stores/billStore';
 
 const HIDE_TAB_PATHS = ['/add', '/bill', '/search', '/annual', '/recurring'];
 
+const TAB_PATHS = ['/', '/calendar', '/stats', '/profile'];
+
 function AppLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const showTab = !HIDE_TAB_PATHS.some(p => location.pathname.startsWith(p));
 
   useEffect(() => {
@@ -23,6 +28,28 @@ function AppLayout() {
       if (count > 0) window.dispatchEvent(new Event('billUpdated'));
     });
   }, []);
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    const listener = CapApp.addListener('backButton', ({ canGoBack }) => {
+      const isTabPage = TAB_PATHS.includes(location.pathname);
+
+      if (isTabPage) {
+        if (location.pathname === '/') {
+          CapApp.minimizeApp();
+        } else {
+          navigate('/');
+        }
+      } else if (canGoBack) {
+        navigate(-1);
+      } else {
+        navigate('/');
+      }
+    });
+
+    return () => { listener.then(h => h.remove()); };
+  }, [location.pathname, navigate]);
 
   return (
     <>
