@@ -179,7 +179,7 @@ export default function Profile() {
           <div className="profile-menu-item">
             <Info size={20} color="var(--text-light)" />
             <span>关于</span>
-            <span className="menu-value">v1.0.0</span>
+            <span className="menu-value">v1.0.1</span>
           </div>
         </div>
 
