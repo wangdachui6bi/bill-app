@@ -1,14 +1,43 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, MessageCircle, Grid3X3 } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Grid3X3, Bookmark, X, Check, Repeat } from 'lucide-react';
 import dayjs from 'dayjs';
-import type { BillType, Bill } from '../types';
-import { addBill, generateId } from '../stores/billStore';
+import type { BillType, Bill, BillTemplate } from '../types';
+import { addBill, generateId, getTemplates, addTemplate, deleteTemplate } from '../stores/billStore';
 import { getParentCategories, getChildCategories, getCategoryDisplay } from '../utils/categories';
 import { parseBillText } from '../utils/billParser';
 import './AddBill.css';
 
 type InputMode = 'category' | 'smart';
+
+function evalExpression(expr: string): number {
+  const cleaned = expr.replace(/[^0-9+\-.]/g, '');
+  if (!cleaned) return 0;
+  try {
+    const parts: number[] = [];
+    const ops: string[] = [];
+    let num = '';
+    for (let i = 0; i < cleaned.length; i++) {
+      const ch = cleaned[i];
+      if ((ch === '+' || ch === '-') && num !== '') {
+        parts.push(parseFloat(num));
+        ops.push(ch);
+        num = '';
+      } else {
+        num += ch;
+      }
+    }
+    if (num) parts.push(parseFloat(num));
+    let result = parts[0] || 0;
+    for (let i = 0; i < ops.length; i++) {
+      if (ops[i] === '+') result += parts[i + 1];
+      else result -= parts[i + 1];
+    }
+    return Math.round(result * 100) / 100;
+  } catch {
+    return 0;
+  }
+}
 
 export default function AddBill() {
   const navigate = useNavigate();
@@ -19,24 +48,43 @@ export default function AddBill() {
   const [note, setNote] = useState('');
   const [date, setDate] = useState(dayjs().format('YYYY-MM-DDTHH:mm'));
   const [smartInput, setSmartInput] = useState('');
+  const [continuousMode, setContinuousMode] = useState(false);
+  const [showSaveToast, setShowSaveToast] = useState(false);
+  const [templates, setTemplates] = useState<BillTemplate[]>([]);
+  const [showTemplates, setShowTemplates] = useState(false);
   const [chatMessages, setChatMessages] = useState<{ role: 'user' | 'bot'; content: string; bill?: Bill }[]>([
     { role: 'bot', content: '嗨！告诉我你花了什么钱，我来帮你记账吧～\n例如：「午餐吃面条15元」「打车回家30」「买水果25.5」' }
   ]);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const parentCategories = getParentCategories(billType);
+  const hasOperator = /[+-]/.test(amount.slice(1));
+  const displayAmount = hasOperator ? `${amount} = ${evalExpression(amount)}` : amount || '0';
+  const finalAmount = hasOperator ? evalExpression(amount) : parseFloat(amount) || 0;
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
 
+  const loadTemplates = useCallback(async () => {
+    setTemplates(await getTemplates());
+  }, []);
+
+  useEffect(() => { loadTemplates(); }, [loadTemplates]);
+
+  const resetForm = () => {
+    setAmount('');
+    setNote('');
+    setDate(dayjs().format('YYYY-MM-DDTHH:mm'));
+    setSelectedCategory('');
+  };
+
   const handleSave = async () => {
-    const amt = parseFloat(amount);
-    if (!amt || !selectedCategory) return;
+    if (!finalAmount || !selectedCategory) return;
 
     const bill: Bill = {
       id: generateId(),
-      amount: amt,
+      amount: finalAmount,
       type: billType,
       categoryId: selectedCategory,
       note,
@@ -46,7 +94,14 @@ export default function AddBill() {
 
     await addBill(bill);
     window.dispatchEvent(new Event('billUpdated'));
-    navigate(-1);
+
+    if (continuousMode) {
+      resetForm();
+      setShowSaveToast(true);
+      setTimeout(() => setShowSaveToast(false), 1500);
+    } else {
+      navigate(-1);
+    }
   };
 
   const handleSmartInput = async () => {
@@ -86,18 +141,60 @@ export default function AddBill() {
     }
   };
 
-  const numpadKeys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'del'];
-
   const handleNumpad = (key: string) => {
     if (key === 'del') {
       setAmount(prev => prev.slice(0, -1));
     } else if (key === '.') {
-      if (!amount.includes('.')) setAmount(prev => prev + '.');
+      const parts = amount.split(/[+-]/);
+      const lastPart = parts[parts.length - 1];
+      if (!lastPart.includes('.')) setAmount(prev => prev + '.');
+    } else if (key === '+' || key === '-') {
+      if (!amount) return;
+      const last = amount[amount.length - 1];
+      if (last === '+' || last === '-') {
+        setAmount(prev => prev.slice(0, -1) + key);
+      } else {
+        setAmount(prev => prev + key);
+      }
     } else {
-      if (amount.includes('.') && amount.split('.')[1].length >= 2) return;
+      const parts = amount.split(/[+-]/);
+      const lastPart = parts[parts.length - 1];
+      if (lastPart.includes('.') && lastPart.split('.')[1].length >= 2) return;
       setAmount(prev => prev + key);
     }
   };
+
+  const handleSaveTemplate = async () => {
+    if (!finalAmount || !selectedCategory) return;
+    const cat = getCategoryDisplay(selectedCategory);
+    const t: BillTemplate = {
+      id: generateId(),
+      name: note || cat.fullName,
+      amount: finalAmount,
+      type: billType,
+      categoryId: selectedCategory,
+      note,
+    };
+    await addTemplate(t);
+    await loadTemplates();
+    setShowSaveToast(true);
+    setTimeout(() => setShowSaveToast(false), 1500);
+  };
+
+  const handleUseTemplate = (t: BillTemplate) => {
+    setBillType(t.type);
+    setSelectedCategory(t.categoryId);
+    setAmount(t.amount.toString());
+    setNote(t.note);
+    setShowTemplates(false);
+  };
+
+  const handleDeleteTemplate = async (id: string) => {
+    await deleteTemplate(id);
+    await loadTemplates();
+  };
+
+  const numpadKeys = ['1', '2', '3', '+', '4', '5', '6', '-', '7', '8', '9', 'del', '.', '0', '00'];
 
   return (
     <div className="page add-bill-page">
@@ -140,6 +237,54 @@ export default function AddBill() {
 
       {inputMode === 'category' ? (
         <>
+          {/* Template Bar */}
+          <div className="template-bar">
+            <button
+              className={`template-toggle ${showTemplates ? 'active' : ''}`}
+              onClick={() => setShowTemplates(!showTemplates)}
+            >
+              <Bookmark size={14} />
+              <span>模板</span>
+            </button>
+            <button
+              className={`continuous-toggle ${continuousMode ? 'active' : ''}`}
+              onClick={() => setContinuousMode(!continuousMode)}
+            >
+              <Repeat size={14} />
+              <span>连续</span>
+            </button>
+            {selectedCategory && finalAmount > 0 && (
+              <button className="save-template-btn" onClick={handleSaveTemplate}>
+                + 存为模板
+              </button>
+            )}
+          </div>
+
+          {/* Template List */}
+          {showTemplates && (
+            <div className="template-list">
+              {templates.length === 0 ? (
+                <div className="template-empty">还没有模板，填好账单后点"存为模板"</div>
+              ) : (
+                templates.map(t => {
+                  const cat = getCategoryDisplay(t.categoryId);
+                  return (
+                    <div key={t.id} className="template-item" onClick={() => handleUseTemplate(t)}>
+                      <span className="template-icon">{cat.icon}</span>
+                      <div className="template-info">
+                        <div className="template-name">{t.name}</div>
+                        <div className="template-amount">¥{t.amount.toFixed(2)}</div>
+                      </div>
+                      <button className="template-del" onClick={e => { e.stopPropagation(); handleDeleteTemplate(t.id); }}>
+                        <X size={14} />
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          )}
+
           {/* Category Selection */}
           <div className="category-grid-wrapper page-content">
             {parentCategories.map(parent => {
@@ -199,13 +344,13 @@ export default function AddBill() {
             </div>
             <div className="amount-display">
               <span className="amount-currency">¥</span>
-              <span className="amount-value">{amount || '0'}</span>
+              <span className={`amount-value ${hasOperator ? 'has-expr' : ''}`}>{displayAmount}</span>
             </div>
-            <div className="numpad">
+            <div className="numpad numpad-4col">
               {numpadKeys.map(key => (
                 <button
                   key={key}
-                  className={`numpad-key ${key === 'del' ? 'key-del' : ''}`}
+                  className={`numpad-key ${key === 'del' ? 'key-del' : ''} ${key === '+' || key === '-' ? 'key-op' : ''}`}
                   onClick={() => handleNumpad(key)}
                 >
                   {key === 'del' ? '⌫' : key}
@@ -215,9 +360,9 @@ export default function AddBill() {
             <button
               className="save-btn"
               onClick={handleSave}
-              disabled={!amount || !selectedCategory}
+              disabled={!finalAmount || !selectedCategory}
             >
-              保存
+              {continuousMode ? '保存并继续' : '保存'}
             </button>
           </div>
         </>
@@ -260,6 +405,14 @@ export default function AddBill() {
               发送
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Save Toast */}
+      {showSaveToast && (
+        <div className="save-toast">
+          <Check size={20} />
+          <span>已保存</span>
         </div>
       )}
     </div>

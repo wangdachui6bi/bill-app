@@ -57,6 +57,111 @@
   color: #fff;
 }
 
+/* Template Bar */
+.template-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.template-toggle,
+.continuous-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg);
+  transition: all 0.2s;
+}
+
+.template-toggle.active {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+}
+
+.continuous-toggle.active {
+  background: #E8F5E9;
+  color: #2E7D32;
+}
+
+.save-template-btn {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--primary);
+  font-weight: 600;
+  padding: 5px 10px;
+}
+
+/* Template List */
+.template-list {
+  padding: 8px 16px;
+  background: var(--bg);
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.template-list::-webkit-scrollbar { display: none; }
+
+.template-empty {
+  font-size: 12px;
+  color: var(--text-light);
+  padding: 8px;
+  white-space: nowrap;
+}
+
+.template-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--card);
+  border-radius: 12px;
+  flex-shrink: 0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.template-item:active {
+  transform: scale(0.97);
+}
+
+.template-icon {
+  font-size: 20px;
+}
+
+.template-info {
+  min-width: 0;
+}
+
+.template-name {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80px;
+}
+
+.template-amount {
+  font-size: 11px;
+  color: var(--text-light);
+}
+
+.template-del {
+  color: var(--text-light);
+  padding: 2px;
+  flex-shrink: 0;
+}
+
 /* Category Grid */
 .category-grid-wrapper {
   padding: 16px;
@@ -166,9 +271,14 @@
   font-weight: 700;
 }
 
-.numpad {
+.amount-value.has-expr {
+  font-size: 22px;
+}
+
+/* 4-column numpad */
+.numpad-4col {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 6px;
   margin-bottom: 10px;
 }
@@ -190,6 +300,17 @@
   font-size: 18px;
 }
 
+.key-op {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  font-weight: 700;
+  font-size: 22px;
+}
+
+.key-op:active {
+  background: #FFDEA6;
+}
+
 .save-btn {
   width: 100%;
   padding: 14px;
@@ -207,6 +328,25 @@
 
 .save-btn:active:not(:disabled) {
   opacity: 0.85;
+}
+
+/* Save Toast */
+.save-toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  border-radius: 24px;
+  font-size: 15px;
+  font-weight: 600;
+  z-index: 999;
+  animation: scaleIn 0.2s ease;
 }
 
 /* Smart Input Mode */

@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, Pencil } from "lucide-react";
+import { ChevronRight, Pencil, Search } from "lucide-react";
 import dayjs from "dayjs";
 import type { Bill, Budget } from "../types";
 import { getAllBills, getBudget, setBudget } from "../stores/billStore";
-import { getCategoryDisplay } from "../utils/categories";
-import { formatAmount, getMonthKey } from "../utils/formatters";
+import { getMonthKey } from "../utils/formatters";
+import SwipeBillItem from "../components/SwipeBillItem";
 import "./Home.css";
 
 export default function Home() {
@@ -48,7 +48,27 @@ export default function Home() {
 
   const balance = totalIncome - totalExpense;
 
-  const recentBills = bills.slice(0, 10);
+  const recentBills = [...bills]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 10);
+
+  const lastMonth = currentMonth.subtract(1, "month");
+  const lastMonthBills = bills.filter((b) => {
+    const d = dayjs(b.date);
+    return d.year() === lastMonth.year() && d.month() === lastMonth.month();
+  });
+  const lastMonthExpense = lastMonthBills
+    .filter((b) => b.type === "expense")
+    .reduce((s, b) => s + b.amount, 0);
+  const lastMonthIncome = lastMonthBills
+    .filter((b) => b.type === "income")
+    .reduce((s, b) => s + b.amount, 0);
+  const expenseDiff = lastMonthExpense > 0
+    ? ((totalExpense - lastMonthExpense) / lastMonthExpense) * 100
+    : 0;
+  const incomeDiff = lastMonthIncome > 0
+    ? ((totalIncome - lastMonthIncome) / lastMonthIncome) * 100
+    : 0;
 
   const budgetAmount = budget?.amount || 0;
   const budgetRemaining = budgetAmount - totalExpense;
@@ -79,8 +99,13 @@ export default function Home() {
         <div className="home-header">
           <div className="home-header-bg" />
           <div className="home-header-content">
-            <div className="home-month-label">
-              {currentMonth.format("M")}月 · 支出
+            <div className="home-top-row">
+              <div className="home-month-label">
+                {currentMonth.format("M")}月 · 支出
+              </div>
+              <button className="home-search-btn" onClick={() => navigate("/search")}>
+                <Search size={20} />
+              </button>
             </div>
             <div className="home-total-expense">{totalExpense.toFixed(2)}</div>
             <div className="home-summary-row">
@@ -160,6 +185,34 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Month Comparison */}
+        {(lastMonthExpense > 0 || lastMonthIncome > 0) && (
+          <div className="card home-comparison fade-in">
+            <div className="comparison-title">对比上月</div>
+            <div className="comparison-row">
+              <div className="comparison-item">
+                <span className="comparison-label">支出</span>
+                <span className="comparison-last">上月 ¥{lastMonthExpense.toFixed(0)}</span>
+                {lastMonthExpense > 0 && (
+                  <span className={`comparison-badge ${expenseDiff > 0 ? "up" : "down"}`}>
+                    {expenseDiff > 0 ? "↑" : "↓"} {Math.abs(expenseDiff).toFixed(0)}%
+                  </span>
+                )}
+              </div>
+              <div className="comparison-divider" />
+              <div className="comparison-item">
+                <span className="comparison-label">收入</span>
+                <span className="comparison-last">上月 ¥{lastMonthIncome.toFixed(0)}</span>
+                {lastMonthIncome > 0 && (
+                  <span className={`comparison-badge ${incomeDiff > 0 ? "up green" : "down"}`}>
+                    {incomeDiff > 0 ? "↑" : "↓"} {Math.abs(incomeDiff).toFixed(0)}%
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Recent Bills */}
         <div className="card home-recent-card fade-in">
           <div className="recent-header">
@@ -179,39 +232,9 @@ export default function Home() {
             </div>
           ) : (
             <div className="recent-list">
-              {recentBills.map((bill) => {
-                const cat = getCategoryDisplay(bill.categoryId);
-                return (
-                  <div
-                    key={bill.id}
-                    className="bill-item"
-                    onClick={() => navigate(`/bill/${bill.id}`)}
-                  >
-                    <div
-                      className="bill-item-icon"
-                      style={{ background: `${cat.color}20` }}
-                    >
-                      {cat.icon}
-                    </div>
-                    <div className="bill-item-info">
-                      <div className="bill-item-category">{cat.fullName}</div>
-                      <div className="bill-item-meta">
-                        {bill.note && (
-                          <span className="bill-item-note">{bill.note}</span>
-                        )}
-                        <span className="bill-item-date">
-                          {dayjs(bill.date).format("MM/DD HH:mm")}
-                        </span>
-                      </div>
-                    </div>
-                    <div
-                      className={`bill-item-amount ${bill.type === "expense" ? "amount-expense" : "amount-income"}`}
-                    >
-                      {formatAmount(bill.amount, bill.type)}
-                    </div>
-                  </div>
-                );
-              })}
+              {recentBills.map((bill) => (
+                <SwipeBillItem key={bill.id} bill={bill} />
+              ))}
             </div>
           )}
         </div>

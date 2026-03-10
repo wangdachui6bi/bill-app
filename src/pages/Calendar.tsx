@@ -1,17 +1,14 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import dayjs from "dayjs";
 import type { Bill } from "../types";
 import { getAllBills } from "../stores/billStore";
-import { getCategoryDisplay } from "../utils/categories";
-import { formatAmount } from "../utils/formatters";
+import SwipeBillItem from "../components/SwipeBillItem";
 import "./Calendar.css";
 
 const MONTHS = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
 
 export default function Calendar() {
-  const navigate = useNavigate();
   const [bills, setBills] = useState<Bill[]>([]);
   const [currentMonth, setCurrentMonth] = useState(dayjs());
   const [selectedDate, setSelectedDate] = useState(
@@ -221,39 +218,9 @@ export default function Calendar() {
             </div>
           ) : (
             <div className="recent-list">
-              {selectedBills.map((bill) => {
-                const cat = getCategoryDisplay(bill.categoryId);
-                return (
-                  <div
-                    key={bill.id}
-                    className="bill-item"
-                    onClick={() => navigate(`/bill/${bill.id}`)}
-                  >
-                    <div
-                      className="bill-item-icon"
-                      style={{ background: `${cat.color}20` }}
-                    >
-                      {cat.icon}
-                    </div>
-                    <div className="bill-item-info">
-                      <div className="bill-item-category">{cat.fullName}</div>
-                      <div className="bill-item-meta">
-                        {bill.note && (
-                          <span className="bill-item-note">{bill.note}</span>
-                        )}
-                        <span className="bill-item-date">
-                          {dayjs(bill.date).format("HH:mm")}
-                        </span>
-                      </div>
-                    </div>
-                    <div
-                      className={`bill-item-amount ${bill.type === "expense" ? "amount-expense" : "amount-income"}`}
-                    >
-                      {formatAmount(bill.amount, bill.type)}
-                    </div>
-                  </div>
-                );
-              })}
+              {selectedBills.map((bill) => (
+                <SwipeBillItem key={bill.id} bill={bill} dateFormat="HH:mm" />
+              ))}
             </div>
           )}
         </div>

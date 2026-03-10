@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { Trash2, Download, Upload, FileText, Info } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Trash2, Download, Upload, FileText, Info, BarChart3, RefreshCw } from "lucide-react";
 import dayjs from "dayjs";
 import { Capacitor } from "@capacitor/core";
 import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
@@ -10,6 +11,7 @@ import localforage from "localforage";
 import "./Profile.css";
 
 export default function Profile() {
+  const navigate = useNavigate();
   const [bills, setBills] = useState<Bill[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -146,6 +148,16 @@ export default function Profile() {
           <div className="profile-menu-item" onClick={handleImport}>
             <Upload size={20} color="#4ECDC4" />
             <span>导入数据</span>
+            <span className="menu-arrow">›</span>
+          </div>
+          <div className="profile-menu-item" onClick={() => navigate("/annual")}>
+            <BarChart3 size={20} color="#FF6B6B" />
+            <span>年度报告</span>
+            <span className="menu-arrow">›</span>
+          </div>
+          <div className="profile-menu-item" onClick={() => navigate("/recurring")}>
+            <RefreshCw size={20} color="#0984E3" />
+            <span>周期性记账</span>
             <span className="menu-arrow">›</span>
           </div>
           <div className="profile-menu-item">
