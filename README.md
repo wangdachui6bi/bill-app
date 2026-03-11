@@ -1,73 +1,113 @@
-# React + TypeScript + Vite
+# 记账小本
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+一款功能丰富的个人记账应用，支持 Web 端和 Android APK 安装使用。数据全部存储在本地，安全无忧。
 
-Currently, two official plugins are available:
+## 技术栈
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **前端框架**：React 19 + TypeScript
+- **构建工具**：Vite
+- **本地存储**：localforage (IndexedDB)
+- **图表库**：ECharts
+- **移动端打包**：Capacitor (Android)
 
-## React Compiler
+## 功能一览
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 记账核心
 
-## Expanding the ESLint configuration
+- **快速记账**：选择分类 + 输入金额，一键记录
+- **智能文字识别**：输入自然语言（如"午饭花了35"），自动识别分类和金额
+- **计算器键盘**：金额输入支持加减运算（如 15+8 自动计算为 23）
+- **连续记账模式**：开启后保存不退出，连续录入多笔账单
+- **快捷模板**：将常用账单保存为模板，一键调用
+- **周期性自动记账**：设置每天/每周/每月/每年自动生成账单
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### 账单管理
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- **账单列表**：按日期浏览所有账单，支持左滑删除
+- **账单搜索**：按备注、分类、金额关键词搜索
+- **账单详情**：查看/编辑账单金额、备注、时间
+- **数据导入/导出**：JSON 格式数据备份与恢复
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### 日历视图
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+- **月历总览**：直观展示每日支出情况
+- **快速跳转**：年月选择器，快速定位到任意历史月份
+- **日账单查看**：点击日期查看当日所有账单
+
+### 统计分析
+
+- **多维度统计**：按周/月/年/自定义时间段汇总
+- **分类占比**：饼图展示各分类支出比例
+- **趋势图表**：柱状图展示每日/每月支出趋势
+- **分类明细下钻**：点击分类查看子分类汇总及所有账单明细
+- **月度对比**：首页展示本月与上月支出/收入的增减百分比
+
+### 年度报告
+
+- **年度总览**：全年支出/收入/月均/结余一览
+- **月度趋势**：支出与收入的月度柱状图对比
+- **年度亮点**：最大支出月、最大收入月、单笔最大支出
+- **TOP 5 分类**：年度支出排名前五的分类
+
+### 预算管理
+
+- **月度预算**：设置每月预算金额
+- **进度追踪**：可视化预算消耗进度条
+- **智能提醒**：显示日均消费和剩余每日可消费额度
+
+### 隐私保护
+
+- **金额打码**：首页眼睛图标一键切换，所有页面金额显示为 `****`
+- **状态记忆**：打码状态持久保存，重启 App 保持上次设置
+
+### 其他
+
+- **丰富分类**：涵盖餐饮、交通、购物、娱乐、恋爱、工资等 60+ 细分类目
+- **Android 硬件返回键适配**：原生返回键正常导航
+- **自动版本号**：每次 git commit 自动递增版本号
+
+## 快速开始
+
+```bash
+# 安装依赖
+npm install
+
+# 启动开发服务器
+npm run dev
+
+# 构建生产版本
+npm run build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Android 打包
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+```bash
+# 构建并同步到 Android 项目
+npm run cap:sync
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# 打开 Android Studio
+npm run cap:open
+```
+
+在 Android Studio 中执行 Build > Build Bundle(s) / APK(s) > Build APK(s) 生成安装包。
+
+## 项目结构
+
+```
+src/
+├── contexts/       # React Context（隐私模式等）
+├── components/     # 通用组件（TabBar、SwipeBillItem 等）
+├── pages/          # 页面组件
+│   ├── Home.tsx        # 首页（概览、预算、近期账单）
+│   ├── Calendar.tsx    # 日历视图
+│   ├── AddBill.tsx     # 记账页（计算器、模板、连续模式）
+│   ├── Stats.tsx       # 统计分析
+│   ├── Profile.tsx     # 个人中心（导入/导出/设置）
+│   ├── BillDetail.tsx  # 账单详情
+│   ├── Search.tsx      # 搜索
+│   ├── AnnualReport.tsx    # 年度报告
+│   └── RecurringBills.tsx  # 周期性记账管理
+├── stores/         # 数据存储层
+├── types/          # TypeScript 类型定义
+└── utils/          # 工具函数（分类、格式化、AI 解析等）
 ```
