@@ -9,12 +9,15 @@ import { CanvasRenderer } from 'echarts/renderers';
 import type { Bill } from '../types';
 import { getAllBills } from '../stores/billStore';
 import { getCategoryDisplay, getCategoryById } from '../utils/categories';
+import { usePrivacy, maskValue } from '../contexts/PrivacyContext';
 import './AnnualReport.css';
 
 echarts.use([BarChartComponent, GridComponent, TooltipComponent, CanvasRenderer]);
 
 export default function AnnualReport() {
   const navigate = useNavigate();
+  const { masked } = usePrivacy();
+  const mm = (v: string) => maskValue(v, masked);
   const [bills, setBills] = useState<Bill[]>([]);
   const [year, setYear] = useState(dayjs().year());
   const barRef = useRef<HTMLDivElement>(null);
@@ -67,7 +70,9 @@ export default function AnnualReport() {
         trigger: 'axis',
         formatter: (params: unknown) => {
           const p = params as { name: string; seriesName: string; value: number }[];
-          return p.map(s => `${s.name} ${s.seriesName}: ¥${s.value.toFixed(0)}`).join('<br/>');
+          return masked
+            ? p.map(s => `${s.name} ${s.seriesName}`).join('<br/>')
+            : p.map(s => `${s.name} ${s.seriesName}: ¥${s.value.toFixed(0)}`).join('<br/>');
         },
       },
       grid: { left: 50, right: 16, top: 24, bottom: 28 },
@@ -80,7 +85,7 @@ export default function AnnualReport() {
       },
       yAxis: {
         type: 'value',
-        axisLabel: { fontSize: 10, formatter: (v: number) => v >= 10000 ? `${(v / 10000).toFixed(0)}w` : v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}` },
+        axisLabel: { fontSize: 10, formatter: (v: number) => masked ? '' : v >= 10000 ? `${(v / 10000).toFixed(0)}w` : v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}` },
         splitLine: { lineStyle: { color: '#F0F0F0' } },
       },
       series: [
@@ -103,7 +108,7 @@ export default function AnnualReport() {
     const h = () => barChart.current?.resize();
     window.addEventListener('resize', h);
     return () => window.removeEventListener('resize', h);
-  }, [monthlyData]);
+  }, [monthlyData, masked]);
 
   return (
     <div className="page annual-page">
@@ -134,13 +139,13 @@ export default function AnnualReport() {
             <div className="annual-overview">
               <div className="annual-card expense-card">
                 <div className="annual-card-label">全年支出</div>
-                <div className="annual-card-value">¥{totalExpense.toFixed(0)}</div>
-                <div className="annual-card-sub">月均 ¥{(totalExpense / 12).toFixed(0)}</div>
+                <div className="annual-card-value">¥{mm(totalExpense.toFixed(0))}</div>
+                <div className="annual-card-sub">月均 ¥{mm((totalExpense / 12).toFixed(0))}</div>
               </div>
               <div className="annual-card income-card">
                 <div className="annual-card-label">全年收入</div>
-                <div className="annual-card-value">¥{totalIncome.toFixed(0)}</div>
-                <div className="annual-card-sub">月均 ¥{(totalIncome / 12).toFixed(0)}</div>
+                <div className="annual-card-value">¥{mm(totalIncome.toFixed(0))}</div>
+                <div className="annual-card-sub">月均 ¥{mm((totalIncome / 12).toFixed(0))}</div>
               </div>
             </div>
 
@@ -154,7 +159,7 @@ export default function AnnualReport() {
                 <span className="annual-stat-label">记账天数</span>
               </div>
               <div className="annual-stat">
-                <span className="annual-stat-num">¥{(totalIncome - totalExpense).toFixed(0)}</span>
+                <span className="annual-stat-num">¥{mm((totalIncome - totalExpense).toFixed(0))}</span>
                 <span className="annual-stat-label">年度结余</span>
               </div>
             </div>
@@ -172,14 +177,14 @@ export default function AnnualReport() {
                 <span className="highlight-emoji">💸</span>
                 <div className="highlight-info">
                   <div className="highlight-label">支出最多的月份</div>
-                  <div className="highlight-value">{maxExpenseMonth.month}月 · ¥{maxExpenseMonth.expense.toFixed(0)}</div>
+                  <div className="highlight-value">{maxExpenseMonth.month}月 · ¥{mm(maxExpenseMonth.expense.toFixed(0))}</div>
                 </div>
               </div>
               <div className="highlight-item">
                 <span className="highlight-emoji">💰</span>
                 <div className="highlight-info">
                   <div className="highlight-label">收入最多的月份</div>
-                  <div className="highlight-value">{maxIncomeMonth.month}月 · ¥{maxIncomeMonth.income.toFixed(0)}</div>
+                  <div className="highlight-value">{maxIncomeMonth.month}月 · ¥{mm(maxIncomeMonth.income.toFixed(0))}</div>
                 </div>
               </div>
               {biggestBill && (
@@ -188,7 +193,7 @@ export default function AnnualReport() {
                   <div className="highlight-info">
                     <div className="highlight-label">单笔最大支出</div>
                     <div className="highlight-value">
-                      ¥{biggestBill.amount.toFixed(0)} · {biggestBill.note || getCategoryDisplay(biggestBill.categoryId).fullName}
+                      ¥{mm(biggestBill.amount.toFixed(0))} · {biggestBill.note || getCategoryDisplay(biggestBill.categoryId).fullName}
                     </div>
                   </div>
                 </div>
@@ -211,7 +216,7 @@ export default function AnnualReport() {
                       </div>
                     </div>
                     <div className="annual-cat-right">
-                      <div className="annual-cat-amount">¥{c.amount.toFixed(0)}</div>
+                      <div className="annual-cat-amount">¥{mm(c.amount.toFixed(0))}</div>
                       <div className="annual-cat-pct">{pct.toFixed(1)}%</div>
                     </div>
                   </div>

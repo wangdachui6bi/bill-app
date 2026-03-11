@@ -7,11 +7,14 @@ import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
 import type { Bill } from "../types";
 import { getAllBills } from "../stores/billStore";
+import { usePrivacy, maskValue } from "../contexts/PrivacyContext";
 import localforage from "localforage";
 import "./Profile.css";
 
 export default function Profile() {
   const navigate = useNavigate();
+  const { masked } = usePrivacy();
+  const mm = (v: string) => maskValue(v, masked);
   const [bills, setBills] = useState<Bill[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -125,14 +128,14 @@ export default function Profile() {
           <div className="profile-stat-divider" />
           <div className="profile-stat">
             <span className="profile-stat-value amount-expense">
-              ¥{totalExpense.toFixed(0)}
+              ¥{mm(totalExpense.toFixed(0))}
             </span>
             <span className="profile-stat-label">累计支出</span>
           </div>
           <div className="profile-stat-divider" />
           <div className="profile-stat">
             <span className="profile-stat-value amount-income">
-              ¥{totalIncome.toFixed(0)}
+              ¥{mm(totalIncome.toFixed(0))}
             </span>
             <span className="profile-stat-label">累计收入</span>
           </div>
@@ -179,7 +182,7 @@ export default function Profile() {
           <div className="profile-menu-item">
             <Info size={20} color="var(--text-light)" />
             <span>关于</span>
-            <span className="menu-value">v1.0.1</span>
+            <span className="menu-value">v1.0.2</span>
           </div>
         </div>
 

@@ -5,11 +5,14 @@ import dayjs from 'dayjs';
 import type { Bill } from '../types';
 import { getAllBills, updateBill, deleteBill } from '../stores/billStore';
 import { getCategoryDisplay } from '../utils/categories';
+import { usePrivacy, maskValue } from '../contexts/PrivacyContext';
 import './BillDetail.css';
 
 export default function BillDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { masked } = usePrivacy();
+  const mm = (v: string) => maskValue(v, masked);
   const [bill, setBill] = useState<Bill | null>(null);
   const [editing, setEditing] = useState(false);
   const [editNote, setEditNote] = useState('');
@@ -100,7 +103,7 @@ export default function BillDetail() {
             </div>
           ) : (
             <div className={`detail-amount ${bill.type === 'expense' ? 'amount-expense' : 'amount-income'}`}>
-              {bill.type === 'expense' ? '-' : '+'}¥{bill.amount.toFixed(2)}
+              {bill.type === 'expense' ? '-' : '+'}¥{mm(bill.amount.toFixed(2))}
             </div>
           )}
         </div>

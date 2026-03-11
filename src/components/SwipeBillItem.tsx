@@ -6,6 +6,7 @@ import type { Bill } from '../types';
 import { deleteBill } from '../stores/billStore';
 import { getCategoryDisplay } from '../utils/categories';
 import { formatAmount } from '../utils/formatters';
+import { usePrivacy, maskValue } from '../contexts/PrivacyContext';
 import './SwipeBillItem.css';
 
 interface Props {
@@ -15,6 +16,7 @@ interface Props {
 
 export default function SwipeBillItem({ bill, dateFormat = 'MM/DD HH:mm' }: Props) {
   const navigate = useNavigate();
+  const { masked } = usePrivacy();
   const itemRef = useRef<HTMLDivElement>(null);
   const startX = useRef(0);
   const currentX = useRef(0);
@@ -86,7 +88,7 @@ export default function SwipeBillItem({ bill, dateFormat = 'MM/DD HH:mm' }: Prop
           </div>
         </div>
         <div className={`bill-item-amount ${bill.type === 'expense' ? 'amount-expense' : 'amount-income'}`}>
-          {formatAmount(bill.amount, bill.type)}
+          {maskValue(formatAmount(bill.amount, bill.type), masked)}
         </div>
       </div>
     </div>

@@ -6,10 +6,13 @@ import type { Bill } from '../types';
 import { getAllBills } from '../stores/billStore';
 import { getCategoryDisplay } from '../utils/categories';
 import { formatAmount } from '../utils/formatters';
+import { usePrivacy, maskValue } from '../contexts/PrivacyContext';
 import './Search.css';
 
 export default function Search() {
   const navigate = useNavigate();
+  const { masked } = usePrivacy();
+  const mm = (v: string) => maskValue(v, masked);
   const inputRef = useRef<HTMLInputElement>(null);
   const [bills, setBills] = useState<Bill[]>([]);
   const [query, setQuery] = useState('');
@@ -68,8 +71,8 @@ export default function Search() {
           <div className="search-summary">
             <span>找到 {results.length} 条结果</span>
             <span className="search-summary-amounts">
-              {totalExpense > 0 && <span className="amount-expense">支出 ¥{totalExpense.toFixed(2)}</span>}
-              {totalIncome > 0 && <span className="amount-income">收入 ¥{totalIncome.toFixed(2)}</span>}
+              {totalExpense > 0 && <span className="amount-expense">支出 ¥{mm(totalExpense.toFixed(2))}</span>}
+              {totalIncome > 0 && <span className="amount-income">收入 ¥{mm(totalIncome.toFixed(2))}</span>}
             </span>
           </div>
         )}
@@ -105,7 +108,7 @@ export default function Search() {
                   </div>
                 </div>
                 <div className={`bill-item-amount ${bill.type === 'expense' ? 'amount-expense' : 'amount-income'}`}>
-                  {formatAmount(bill.amount, bill.type)}
+                  {mm(formatAmount(bill.amount, bill.type))}
                 </div>
               </div>
             );

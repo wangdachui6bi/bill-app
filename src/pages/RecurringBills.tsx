@@ -8,6 +8,7 @@ import {
   deleteRecurringBill, generateId,
 } from '../stores/billStore';
 import { getParentCategories, getChildCategories, getCategoryDisplay } from '../utils/categories';
+import { usePrivacy, maskValue } from '../contexts/PrivacyContext';
 import './RecurringBills.css';
 
 const CYCLE_LABELS: Record<RecurringCycle, string> = {
@@ -29,6 +30,7 @@ function getCycleDesc(r: RecurringBill) {
 
 export default function RecurringBillsPage() {
   const navigate = useNavigate();
+  const { masked } = usePrivacy();
   const [list, setList] = useState<RecurringBill[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -158,7 +160,7 @@ export default function RecurringBillsPage() {
                   </div>
                 </div>
                 <div className={`recurring-item-amount ${r.type === 'expense' ? 'amount-expense' : 'amount-income'}`}>
-                  {r.type === 'expense' ? '-' : '+'}¥{r.amount.toFixed(2)}
+                  {r.type === 'expense' ? '-' : '+'}¥{maskValue(r.amount.toFixed(2), masked)}
                 </div>
               </div>
               <div className="recurring-item-actions">

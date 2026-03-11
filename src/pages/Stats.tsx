@@ -11,6 +11,7 @@ import type { Bill, BillType } from '../types';
 import { getAllBills } from '../stores/billStore';
 import { getCategoryDisplay, getCategoryById, DEFAULT_CATEGORIES } from '../utils/categories';
 import { formatAmount } from '../utils/formatters';
+import { usePrivacy, maskValue } from '../contexts/PrivacyContext';
 import './Stats.css';
 
 dayjs.extend(isoWeek);
@@ -26,6 +27,8 @@ function getWeekLabel(d: dayjs.Dayjs) {
 
 export default function Stats() {
   const routerNavigate = useNavigate();
+  const { masked } = usePrivacy();
+  const mm = (v: string) => maskValue(v, masked);
   const [bills, setBills] = useState<Bill[]>([]);
   const [billType, setBillType] = useState<BillType>('expense');
   const [timeRange, setTimeRange] = useState<TimeRange>('month');
@@ -193,7 +196,7 @@ export default function Stats() {
       return;
     }
     pieChart.current.setOption({
-      tooltip: { trigger: 'item', formatter: '{b}: ¥{c} ({d}%)' },
+      tooltip: { trigger: 'item', formatter: masked ? '{b}: ({d}%)' : '{b}: ¥{c} ({d}%)' },
       series: [{
         type: 'pie',
         radius: ['40%', '70%'],
@@ -210,7 +213,7 @@ export default function Stats() {
     const h = () => pieChart.current?.resize();
     window.addEventListener('resize', h);
     return () => window.removeEventListener('resize', h);
-  }, [sortedCategories]);
+  }, [sortedCategories, masked]);
 
   // Bar chart
   useEffect(() => {
@@ -228,7 +231,7 @@ export default function Stats() {
         trigger: 'axis',
         formatter: (params: unknown) => {
           const p = (params as { name: string; value: number }[])[0];
-          return `${p.name}<br/>¥${p.value.toFixed(2)}`;
+          return masked ? p.name : `${p.name}<br/>¥${p.value.toFixed(2)}`;
         },
       },
       grid: { left: 50, right: 16, top: 16, bottom: 28 },
@@ -245,7 +248,7 @@ export default function Stats() {
       },
       yAxis: {
         type: 'value',
-        axisLabel: { fontSize: 10, formatter: (v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}` },
+        axisLabel: { fontSize: 10, formatter: (v: number) => masked ? '' : v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}` },
         splitLine: { lineStyle: { color: '#F0F0F0' } },
       },
       series: [{
@@ -263,7 +266,7 @@ export default function Stats() {
     const h = () => barChart.current?.resize();
     window.addEventListener('resize', h);
     return () => window.removeEventListener('resize', h);
-  }, [barData, billType, timeRange]);
+  }, [barData, billType, timeRange, masked]);
 
   return (
     <div className="page">
@@ -326,16 +329,16 @@ export default function Stats() {
         <div className="stats-summary-cards">
           <div className="summary-card">
             <div className="summary-label">总支出</div>
-            <div className="summary-value amount-expense">¥{totalExpense.toFixed(2)}</div>
+            <div className="summary-value amount-expense">¥{mm(totalExpense.toFixed(2))}</div>
           </div>
           <div className="summary-card">
             <div className="summary-label">总收入</div>
-            <div className="summary-value amount-income">¥{totalIncome.toFixed(2)}</div>
+            <div className="summary-value amount-income">¥{mm(totalIncome.toFixed(2))}</div>
           </div>
           <div className="summary-card">
             <div className="summary-label">结余</div>
             <div className={`summary-value ${totalIncome - totalExpense >= 0 ? 'amount-income' : 'amount-expense'}`}>
-              ¥{(totalIncome - totalExpense).toFixed(2)}
+              ¥{mm((totalIncome - totalExpense).toFixed(2))}
             </div>
           </div>
         </div>
@@ -347,11 +350,11 @@ export default function Stats() {
           </div>
           <div className="stats-detail-item">
             <span className="detail-label">日均{billType === 'expense' ? '支出' : '收入'}</span>
-            <span className="detail-value">¥{dailyAvg.toFixed(2)}</span>
+            <span className="detail-value">¥{mm(dailyAvg.toFixed(2))}</span>
           </div>
           <div className="stats-detail-item">
             <span className="detail-label">笔均</span>
-            <span className="detail-value">¥{billCount > 0 ? (total / billCount).toFixed(2) : '0.00'}</span>
+            <span className="detail-value">¥{mm(billCount > 0 ? (total / billCount).toFixed(2) : '0.00')}</span>
           </div>
         </div>
 
@@ -404,7 +407,7 @@ export default function Stats() {
                     </div>
                   </div>
                   <div className="stats-cat-right">
-                    <div className="stats-cat-amount">¥{c.amount.toFixed(2)}</div>
+                    <div className="stats-cat-amount">¥{mm(c.amount.toFixed(2))}</div>
                     <div className="stats-cat-percent">{percent.toFixed(1)}%</div>
                   </div>
                   <ChevronDown size={16} className={`stats-cat-arrow ${isExpanded ? 'rotated' : ''}`} />
@@ -418,7 +421,7 @@ export default function Stats() {
                           <div key={sub.catId} className="stats-sub-item">
                             <span className="stats-sub-icon">{sub.icon}</span>
                             <span className="stats-sub-name">{sub.name}</span>
-                            <span className="stats-sub-amount">¥{sub.amount.toFixed(2)}</span>
+                            <span className="stats-sub-amount">¥{mm(sub.amount.toFixed(2))}</span>
                           </div>
                         ))}
                       </div>
@@ -440,7 +443,7 @@ export default function Stats() {
                               </div>
                             </div>
                             <div className={`stats-bill-amount ${bill.type === 'expense' ? 'amount-expense' : 'amount-income'}`}>
-                              {formatAmount(bill.amount, bill.type)}
+                              {mm(formatAmount(bill.amount, bill.type))}
                             </div>
                           </div>
                         );

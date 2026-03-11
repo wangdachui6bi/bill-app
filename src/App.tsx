@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { HashRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { App as CapApp } from '@capacitor/app';
+import { PrivacyProvider } from './contexts/PrivacyContext';
 import TabBar from './components/TabBar';
 import Home from './pages/Home';
 import Calendar from './pages/Calendar';
@@ -72,7 +73,9 @@ function AppLayout() {
 export default function App() {
   return (
     <HashRouter>
-      <AppLayout />
+      <PrivacyProvider>
+        <AppLayout />
+      </PrivacyProvider>
     </HashRouter>
   );
 }

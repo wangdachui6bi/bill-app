@@ -3,12 +3,15 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import dayjs from "dayjs";
 import type { Bill } from "../types";
 import { getAllBills } from "../stores/billStore";
+import { usePrivacy, maskValue } from "../contexts/PrivacyContext";
 import SwipeBillItem from "../components/SwipeBillItem";
 import "./Calendar.css";
 
 const MONTHS = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
 
 export default function Calendar() {
+  const { masked } = usePrivacy();
+  const mm = (v: string) => maskValue(v, masked);
   const [bills, setBills] = useState<Bill[]>([]);
   const [currentMonth, setCurrentMonth] = useState(dayjs());
   const [selectedDate, setSelectedDate] = useState(
@@ -146,16 +149,16 @@ export default function Calendar() {
         <div className="calendar-summary">
           <div className="calendar-summary-item">
             <span className="label">支出</span>
-            <span className="value expense">¥{monthExpense.toFixed(2)}</span>
+            <span className="value expense">¥{mm(monthExpense.toFixed(2))}</span>
           </div>
           <div className="calendar-summary-item">
             <span className="label">收入</span>
-            <span className="value income">¥{monthIncome.toFixed(2)}</span>
+            <span className="value income">¥{mm(monthIncome.toFixed(2))}</span>
           </div>
           <div className="calendar-summary-item">
             <span className="label">结余</span>
             <span className="value">
-              {(monthIncome - monthExpense).toFixed(2)}
+              {mm((monthIncome - monthExpense).toFixed(2))}
             </span>
           </div>
         </div>
@@ -191,7 +194,7 @@ export default function Calendar() {
                   {hasBills && (
                     <span className="day-amount">
                       {dayTotal > 0
-                        ? `-${dayTotal > 999 ? "999+" : dayTotal.toFixed(0)}`
+                        ? masked ? "***" : `-${dayTotal > 999 ? "999+" : dayTotal.toFixed(0)}`
                         : ""}
                     </span>
                   )}

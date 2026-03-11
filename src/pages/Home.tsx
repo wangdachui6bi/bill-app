@@ -1,15 +1,18 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, Pencil, Search } from "lucide-react";
+import { ChevronRight, Pencil, Search, Eye, EyeOff } from "lucide-react";
 import dayjs from "dayjs";
 import type { Bill, Budget } from "../types";
 import { getAllBills, getBudget, setBudget } from "../stores/billStore";
 import { getMonthKey } from "../utils/formatters";
+import { usePrivacy, maskValue } from "../contexts/PrivacyContext";
 import SwipeBillItem from "../components/SwipeBillItem";
 import "./Home.css";
 
 export default function Home() {
   const navigate = useNavigate();
+  const { masked, toggle: togglePrivacy } = usePrivacy();
+  const m = (v: string) => maskValue(v, masked);
   const [bills, setBills] = useState<Bill[]>([]);
   const [budget, setBudgetState] = useState<Budget | null>(null);
   const [currentMonth] = useState(dayjs());
@@ -103,14 +106,19 @@ export default function Home() {
               <div className="home-month-label">
                 {currentMonth.format("M")}月 · 支出
               </div>
-              <button className="home-search-btn" onClick={() => navigate("/search")}>
-                <Search size={20} />
-              </button>
+              <div className="home-top-actions">
+                <button className="home-privacy-btn" onClick={togglePrivacy}>
+                  {masked ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+                <button className="home-search-btn" onClick={() => navigate("/search")}>
+                  <Search size={20} />
+                </button>
+              </div>
             </div>
-            <div className="home-total-expense">{totalExpense.toFixed(2)}</div>
+            <div className="home-total-expense">{m(totalExpense.toFixed(2))}</div>
             <div className="home-summary-row">
-              <span>收入 {totalIncome.toFixed(2)}</span>
-              <span>结余 {balance.toFixed(2)}</span>
+              <span>收入 {m(totalIncome.toFixed(2))}</span>
+              <span>结余 {m(balance.toFixed(2))}</span>
             </div>
           </div>
         </div>
@@ -126,7 +134,7 @@ export default function Home() {
                 setShowBudgetInput(true);
               }}
             >
-              {budgetAmount.toFixed(2)} <Pencil size={14} />
+              {m(budgetAmount.toFixed(2))} <Pencil size={14} />
             </button>
           </div>
           {showBudgetInput && (
@@ -162,10 +170,10 @@ export default function Home() {
             </div>
             <div className="budget-progress-labels">
               <span>{budgetPercent.toFixed(0)}%</span>
-              <span>已消费 {totalExpense.toFixed(2)}</span>
+              <span>已消费 {m(totalExpense.toFixed(2))}</span>
               <span className="budget-remaining">
                 剩余额度{" "}
-                {budgetRemaining > 0 ? budgetRemaining.toFixed(2) : "0.00"}
+                {m(budgetRemaining > 0 ? budgetRemaining.toFixed(2) : "0.00")}
               </span>
             </div>
           </div>
@@ -173,13 +181,13 @@ export default function Home() {
             <div className="budget-daily-item">
               <span className="dot orange" />
               <span>本月日均消费</span>
-              <span className="budget-daily-amount">{dailyAvg.toFixed(2)}</span>
+              <span className="budget-daily-amount">{m(dailyAvg.toFixed(2))}</span>
             </div>
             <div className="budget-daily-item">
               <span className="dot blue" />
               <span>剩余每日可消费</span>
               <span className="budget-daily-amount">
-                {dailyBudget > 0 ? dailyBudget.toFixed(2) : "0.00"}
+                {m(dailyBudget > 0 ? dailyBudget.toFixed(2) : "0.00")}
               </span>
             </div>
           </div>
@@ -192,7 +200,7 @@ export default function Home() {
             <div className="comparison-row">
               <div className="comparison-item">
                 <span className="comparison-label">支出</span>
-                <span className="comparison-last">上月 ¥{lastMonthExpense.toFixed(0)}</span>
+                <span className="comparison-last">上月 ¥{m(lastMonthExpense.toFixed(0))}</span>
                 {lastMonthExpense > 0 && (
                   <span className={`comparison-badge ${expenseDiff > 0 ? "up" : "down"}`}>
                     {expenseDiff > 0 ? "↑" : "↓"} {Math.abs(expenseDiff).toFixed(0)}%
@@ -202,7 +210,7 @@ export default function Home() {
               <div className="comparison-divider" />
               <div className="comparison-item">
                 <span className="comparison-label">收入</span>
-                <span className="comparison-last">上月 ¥{lastMonthIncome.toFixed(0)}</span>
+                <span className="comparison-last">上月 ¥{m(lastMonthIncome.toFixed(0))}</span>
                 {lastMonthIncome > 0 && (
                   <span className={`comparison-badge ${incomeDiff > 0 ? "up green" : "down"}`}>
                     {incomeDiff > 0 ? "↑" : "↓"} {Math.abs(incomeDiff).toFixed(0)}%
